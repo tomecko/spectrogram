@@ -2,6 +2,29 @@ const heading = document.querySelector("h1");
 heading.textContent = "CLICK HERE TO START";
 document.body.addEventListener("click", init);
 
+const COLOR_SCALE = [
+  "#000083",
+  "#001e97",
+  "#003caa",
+  "#0163bb",
+  "#028acc",
+  "#03b1dd",
+  "#04d8ee",
+  "#05ffff",
+  "#37ffcc",
+  "#69ff99",
+  "#9bff66",
+  "#cdff33",
+  "#ffff00",
+  "#fecc00",
+  "#fd9900",
+  "#fc6600",
+  "#fb3300",
+  "#fa0000",
+  "#bd0000",
+  "#800000",
+];
+
 function init() {
   heading.textContent = "Spectrogram";
   document.body.removeEventListener("click", init);
@@ -41,9 +64,6 @@ function init() {
   // window. is needed otherwise Safari explodes
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-  // Grab the mute button to use below
-  const mute = document.querySelector(".mute");
-
   // Set up the different audio nodes we will use for the app
   const analyser = audioCtx.createAnalyser();
   analyser.minDecibels = -90;
@@ -51,12 +71,14 @@ function init() {
   analyser.smoothingTimeConstant = 0.85;
 
   // Set up canvas context for visualizer
-  const canvas = document.querySelector(".visualizer");
-  const canvasCtx = canvas.getContext("2d");
+  const canvasTimeline = document.getElementById("timeline");
+  const canvasTimelineCtx = canvasTimeline.getContext("2d");
+  const canvasCurrent = document.getElementById("current");
+  const canvasCurrentCtx = canvasCurrent.getContext("2d");
 
   const intendedWidth = document.querySelector(".wrapper").clientWidth;
-  canvas.setAttribute("width", intendedWidth);
-  let drawVisual;
+  canvasTimeline.setAttribute("width", intendedWidth);
+  canvasCurrent.setAttribute("width", intendedWidth);
 
   // Main block for doing the audio recording
   if (navigator.mediaDevices.getUserMedia) {
@@ -67,7 +89,6 @@ function init() {
       .then(function (stream) {
         console.log(stream);
         audioCtx.createMediaStreamSource(stream).connect(analyser);
-        analyser.connect(audioCtx.destination);
         visualize();
       })
       .catch(function (err) {
@@ -78,35 +99,69 @@ function init() {
   }
 
   function visualize() {
-    WIDTH = canvas.width;
-    HEIGHT = canvas.height;
+    const DRAW_N_DATA_POINTS = 1000;
+
     console.log("visualize!!");
 
-    analyser.fftSize = 256;
-    const bufferLengthAlt = analyser.frequencyBinCount;
-    console.log(bufferLengthAlt);
+    analyser.fftSize = 4096;
+    const bufferLength = analyser.frequencyBinCount / 50;
 
     // See comment above for Float32Array()
-    const dataArrayAlt = new Uint8Array(bufferLengthAlt);
+    const dataArray = new Uint8Array(bufferLength);
 
-    canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
+    let dataAcc = [];
 
-    const draw = function () {
-      console.log("draw");
-      drawVisual = requestAnimationFrame(draw);
+    const analyse = function (data) {
+      const HIGH_ENOUGH = 200;
+      const maxOrHighEnough = Math.max(
+        HIGH_ENOUGH,
+        data.reduce((acc, curr) => Math.max(acc, curr), 0)
+      );
+      console.log(maxOrHighEnough);
+      return data.map((val) => (val / maxOrHighEnough) * 100);
+    };
 
-      analyser.getByteFrequencyData(dataArrayAlt);
-      console.log(dataArrayAlt);
-
-      canvasCtx.fillStyle = "rgb(0, 0, 0)";
+    const drawTimeline = function (canvas, canvasCtx, data) {
+      const SHOW_LAST_N_SECONDS = 5;
+      const BACKGROUND_COLOR = "#ddd";
+      WIDTH = canvas.width;
+      HEIGHT = canvas.height;
+      const CELL_WIDTH = WIDTH / DRAW_N_DATA_POINTS;
+      const CELL_HEIGHT = HEIGHT / bufferLength;
+      canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
+      canvasCtx.fillStyle = BACKGROUND_COLOR;
       canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
 
-      const barWidth = (WIDTH / bufferLengthAlt) * 2.5;
+      data.forEach((pointData) => {
+        const x = WIDTH - Math.round(
+          ((Date.now() - pointData.ts) / 1000 / SHOW_LAST_N_SECONDS) * WIDTH
+        );
+        pointData.data
+          .slice()
+          .reverse()
+          .forEach((val, i) => {
+            const MIN_THRESHOLD = 20;
+            canvasCtx.fillStyle =
+              val > MIN_THRESHOLD
+                ? COLOR_SCALE[Math.round((val / 100) * COLOR_SCALE.length)]
+                : BACKGROUND_COLOR;
+            canvasCtx.fillRect(x, i * CELL_HEIGHT, CELL_WIDTH, CELL_HEIGHT);
+          });
+      });
+    };
+
+    const drawCurrent = function (canvas, canvasCtx) {
+      WIDTH = canvas.width;
+      HEIGHT = canvas.height;
+      canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
+      canvasCtx.fillStyle = "rgb(0, 0, 0)";
+      canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+      const barWidth = (WIDTH / bufferLength) * 2.5;
       let barHeight;
       let x = 0;
 
-      for (let i = 0; i < bufferLengthAlt; i++) {
-        barHeight = dataArrayAlt[i];
+      for (let i = 0; i < bufferLength; i++) {
+        barHeight = dataArray[i];
 
         canvasCtx.fillStyle = "rgb(" + (barHeight + 100) + ",50,50)";
         canvasCtx.fillRect(x, HEIGHT - barHeight / 2, barWidth, barHeight / 2);
@@ -115,6 +170,19 @@ function init() {
       }
     };
 
-    draw();
+    const tick = function () {
+      requestAnimationFrame(tick);
+
+      analyser.getByteFrequencyData(dataArray);
+      dataAcc = [
+        ...dataAcc,
+        { data: analyse(dataArray), ts: Date.now() },
+      ].slice(-DRAW_N_DATA_POINTS);
+
+      drawTimeline(canvasTimeline, canvasTimelineCtx, dataAcc);
+      drawCurrent(canvasCurrent, canvasCurrentCtx);
+    };
+
+    tick();
   }
 }

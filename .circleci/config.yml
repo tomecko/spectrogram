@@ -19,6 +19,8 @@ jobs:
     machine:
       enabled: true
     steps:
+      - checkout
+      - run: ls -larth
       - add_ssh_keys:
           fingerprints:
             - "c8:14:9d:3b:57:2f:b0:2f:f7:44:5c:08:b0:c7:a1:8c"

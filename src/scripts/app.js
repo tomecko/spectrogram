@@ -104,7 +104,7 @@ function init() {
     console.log("visualize!!");
 
     analyser.fftSize = 4096;
-    const bufferLength = analyser.frequencyBinCount / 50;
+    const bufferLength = analyser.frequencyBinCount / 80;
 
     // See comment above for Float32Array()
     const dataArray = new Uint8Array(bufferLength);

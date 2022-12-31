@@ -12,7 +12,7 @@ commands:
             echo "<< parameters.domain >>"
             ssh -p 222 $SSH_USER@$SSH_HOST "find ~/domains/<< parameters.domain >>/public_html -mindepth 1 -maxdepth 1 -not -name cgi-bin -exec rm -rv {} \;"
             scp -P 222 -r src/* $SSH_USER@$SSH_HOST:~/domains/<< parameters.domain >>/public_html
-            # scp -P 222 -r src/.htaccess $SSH_USER@$SSH_HOST:~/domains/<< parameters.domain >>/public_html
+            scp -P 222 -r src/.htaccess $SSH_USER@$SSH_HOST:~/domains/<< parameters.domain >>/public_html
 
 jobs:
   deploy:

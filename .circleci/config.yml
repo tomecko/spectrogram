@@ -1,0 +1,39 @@
+version: 2.1
+
+commands:
+  ssh_deploy:
+    parameters:
+      domain:
+        type: string
+    steps:
+      - run:
+          name: Deploy Over SSH (domain = << parameters.domain >>)
+          command: |
+            echo "<< parameters.domain >>"
+            ssh -p 222 $SSH_USER@$SSH_HOST "find ~/domains/<< parameters.domain >>/public_html -mindepth 1 -maxdepth 1 -not -name cgi-bin -exec rm -rv {} \;"
+            scp -P 222 -r src/* $SSH_USER@$SSH_HOST:~/domains/<< parameters.domain >>/public_html
+            scp -P 222 -r src/.htaccess $SSH_USER@$SSH_HOST:~/domains/<< parameters.domain >>/public_html
+
+jobs:
+  deploy:
+    machine:
+      enabled: true
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "c8:14:9d:3b:57:2f:b0:2f:f7:44:5c:08:b0:c7:a1:8c"
+      - run: echo $REMOTE_HOSTKEY >> ~/.ssh/known_hosts
+      - ssh_deploy:
+          domain: spectrogram.tomaszoledzki.pl
+
+workflows:
+  version: 2
+  test-deploy:
+    jobs:
+      - test
+      - deploy:
+          requires:
+            - test
+          filters:
+            branches:
+              only: main

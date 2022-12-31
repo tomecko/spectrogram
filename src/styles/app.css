@@ -1,0 +1,48 @@
+/* || General layout rules for narrow screens */
+
+html {
+  height: 100%;
+  font-family: "Righteous", cursive;
+  font-size: 10px;
+  background-color: black;
+}
+
+body {
+  width: 100%;
+  height: inherit;
+  background-color: #222;
+}
+
+h1,
+h2,
+label {
+  font-size: 3rem;
+  font-family: "Nova Square", cursive;
+  text-align: center;
+  color: black;
+  text-shadow: -1px -1px 1px #aaa, 0px 1px 1px rgba(255, 255, 255, 0.5),
+    1px 1px 2px rgba(255, 255, 255, 0.7), 0px 0px 2px rgba(255, 255, 255, 0.4);
+  margin: 0;
+}
+
+h1 {
+  font-size: 3.5rem;
+  padding-top: 1.2rem;
+}
+
+.wrapper {
+  height: 100%;
+  width: 100vw;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* || main UI sections */
+
+header {
+  height: 120px;
+}
+
+canvas {
+  margin-bottom: -3px;
+}

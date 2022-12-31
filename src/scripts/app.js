@@ -123,10 +123,10 @@ function init() {
 
     const drawTimeline = function (canvas, canvasCtx, data) {
       const SHOW_LAST_N_SECONDS = 5;
-      const BACKGROUND_COLOR = "#ddd";
+      const BACKGROUND_COLOR = "#000";
       WIDTH = canvas.width;
       HEIGHT = canvas.height;
-      const CELL_WIDTH = WIDTH / DRAW_N_DATA_POINTS;
+      const CELL_WIDTH = 3;
       const CELL_HEIGHT = HEIGHT / bufferLength;
       canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
       canvasCtx.fillStyle = BACKGROUND_COLOR;
